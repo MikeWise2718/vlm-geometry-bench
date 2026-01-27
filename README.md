@@ -117,12 +117,13 @@ Evaluation on 92 images with COUNT and PATTERN tasks (0-shot):
 
 ### Overall Performance
 
-| Model | Size | COUNT Exact | COUNT ±2 | PATTERN Acc | Time |
-|-------|------|-------------|----------|-------------|------|
-| llama3.2-vision | 7.8 GB | 6.5% | 17.4% | 66.3% | 159s |
-| minicpm-v | 5.5 GB | 4.3% | 30.4% | 51.1% | 318s |
-| granite3.2-vision:2b | 2.4 GB | ~1%* | ~1%* | 39.1% | 116s |
-| qwen3-vl:8b | 6.1 GB | ~4%* | ~4%* | 58.8% | 671s |
+| Model | Size | COUNT Exact | PATTERN Acc | Time |
+|-------|------|-------------|-------------|------|
+| llava:7b | 4.7 GB | 2.2% | 48.9% | 26s |
+| llama3.2-vision | 7.8 GB | 6.5% | 66.3% | 159s |
+| minicpm-v | 5.5 GB | 4.3% | 51.1% | 318s |
+| granite3.2-vision:2b | 2.4 GB | ~1%* | 39.1% | 116s |
+| qwen3-vl:8b | 6.1 GB | ~4%* | 58.8% | 671s |
 
 *Low success rate due to response parsing issues
 
@@ -130,6 +131,7 @@ Evaluation on 92 images with COUNT and PATTERN tasks (0-shot):
 
 | Model | EMPTY | SINGLE | RANDOM | HEXAGONAL |
 |-------|-------|--------|--------|-----------|
+| llava:7b | 50% | 50% | 97% | 0% |
 | llama3.2-vision | 0% | 100% | 91% | 42% |
 | minicpm-v | 100% | 100% | 100% | 0% |
 | granite3.2-vision:2b | 100% | 0% | 78% | 0% |
@@ -137,10 +139,11 @@ Evaluation on 92 images with COUNT and PATTERN tasks (0-shot):
 
 ### Key Findings
 
-1. **Counting is challenging**: All models struggle with exact spot counting, achieving only 4-7% exact match rates
+1. **Counting is challenging**: All models struggle with exact spot counting, achieving only 2-7% exact match rates
 2. **Random patterns are easier**: Models achieve 78-100% accuracy on RANDOM patterns
 3. **Hexagonal patterns are difficult**: Most models fail to recognize hexagonal arrangements (0-42%)
-4. **llama3.2-vision performs best overall**: Best hexagonal recognition and competitive on other metrics
+4. **llama3.2-vision performs best overall**: Best hexagonal recognition (42%) and highest pattern accuracy (66.3%)
+5. **Speed vs accuracy tradeoff**: llava:7b is fastest (26s) but has lowest accuracy; qwen3-vl is slowest (671s) with moderate accuracy
 
 ## Output Files
 

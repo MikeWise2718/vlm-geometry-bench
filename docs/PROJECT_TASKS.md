@@ -149,7 +149,8 @@ This document tracks the implementation tasks for VLM Geometry Bench.
 **Description:** Evaluate multiple vision-language models on the test suite to establish baseline performance.
 
 **Deliverables:**
-- Evaluations with 4 Ollama models:
+- Evaluations with 5 Ollama models:
+  - llava:7b (4.7 GB)
   - llama3.2-vision:latest (7.8 GB)
   - minicpm-v:latest (5.5 GB)
   - granite3.2-vision:2b (2.4 GB)
@@ -158,10 +159,11 @@ This document tracks the implementation tasks for VLM Geometry Bench.
 - Baseline metrics documented in README.md
 
 **Key Findings:**
-- COUNT exact match: 4-7% across models
+- COUNT exact match: 2-7% across models
 - PATTERN accuracy: 39-66% across models
 - RANDOM patterns easier than HEXAGONAL
-- llama3.2-vision best overall performer
+- llama3.2-vision best overall performer (66.3% pattern accuracy, 42% hexagonal)
+- llava:7b fastest (26s) but lowest accuracy
 
 ### Task 13: Document project and create usage guide
 
