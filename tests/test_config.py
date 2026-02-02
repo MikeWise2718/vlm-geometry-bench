@@ -54,3 +54,13 @@ class TestEvaluationConfig:
         """Test that http:// is added to URL without prefix."""
         config = EvaluationConfig(base_url="localhost:11434")
         assert config.base_url.startswith("http://")
+
+    def test_anthropic_auto_url(self):
+        """Test that Anthropic backend sets correct URL."""
+        config = EvaluationConfig(backend="anthropic")
+        assert "api.anthropic.com" in config.base_url
+
+    def test_api_endpoint_anthropic(self):
+        """Test API endpoint for Anthropic backend."""
+        config = EvaluationConfig(backend="anthropic")
+        assert "/v1/messages" in config.api_endpoint

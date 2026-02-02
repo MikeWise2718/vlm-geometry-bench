@@ -4,7 +4,7 @@ This document describes the test suite for VLM Geometry Bench, covering test org
 
 ## Overview
 
-The test suite contains **156 tests** across 6 test modules, providing approximately **70% code coverage** of the core components.
+The test suite contains **164 tests** across 6 test modules, providing approximately **70% code coverage** of the core components.
 
 ## Running Tests
 
@@ -49,14 +49,14 @@ Tests for the `EvaluationConfig` dataclass that manages evaluation settings.
 - `test_api_endpoint_openrouter` - Correct endpoint for OpenRouter
 - `test_url_prefix_auto_added` - Auto-adds http:// to URLs
 
-### test_response_parser.py (42 tests)
+### test_response_parser.py (48 tests)
 
 Tests for parsing VLM text responses into structured data.
 
 | Test Class | Tests | Description |
 |------------|-------|-------------|
 | `TestParseCount` | 10 | COUNT response parsing |
-| `TestParseLocate` | 8 | LOCATE response parsing |
+| `TestParseLocate` | 10 | LOCATE response parsing (normalized coords) |
 | `TestParsePattern` | 10 | PATTERN response parsing |
 | `TestParseSize` | 7 | SIZE response parsing |
 | `TestParseDefect` | 5 | DEFECT response parsing |
@@ -69,12 +69,14 @@ Tests for parsing VLM text responses into structured data.
 - Zero detection: `"no spots"` → 0
 - Empty/invalid responses fail gracefully
 
-**LOCATE parsing tests:**
-- Parentheses format: `"(100, 200), (300, 400)"`
-- Bracket format: `"[[100, 200], [300, 400]]"`
+**LOCATE parsing tests (normalized coordinates):**
+- Parentheses format: `"(0.18, 0.67), (0.40, 0.29)"`
+- Bracket format: `"[[0.18, 0.67], [0.40, 0.29]]"`
 - One per line format
 - Floating point coordinates
-- Out-of-bounds rejection
+- Out-of-bounds rejection (values > 1.1)
+- Clamping slightly-over-1.0 values
+- Edge values (0.0, 1.0)
 
 **PATTERN parsing tests:**
 - Exact matches: RANDOM, HEXAGONAL, GRID, EMPTY, SINGLE

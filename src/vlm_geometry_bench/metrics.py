@@ -190,14 +190,14 @@ class MetricsCalculator:
         self,
         count_tolerance: int = 2,
         size_tolerance_pct: float = 20.0,
-        locate_match_distance: float = 20.0,  # pixels
+        locate_match_distance: float = 0.05,  # normalized distance (5% of image dimension)
     ):
         """Initialize metrics calculator.
 
         Args:
             count_tolerance: ±N tolerance for "within_tolerance" count metric
             size_tolerance_pct: Percentage tolerance for size estimation
-            locate_match_distance: Max distance (pixels) to consider a match
+            locate_match_distance: Max normalized distance to consider a match (0.05 = 5% of image)
         """
         self.count_tolerance = count_tolerance
         self.size_tolerance_pct = size_tolerance_pct

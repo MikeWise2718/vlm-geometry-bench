@@ -125,8 +125,14 @@ class VisionClient:
     def _build_headers(self) -> Dict[str, str]:
         """Build request headers."""
         headers = {"Content-Type": "application/json"}
-        if self.config.api_key:
-            headers["Authorization"] = f"Bearer {self.config.api_key}"
+        if self.config.backend == "anthropic":
+            # Anthropic uses x-api-key header instead of Bearer token
+            if self.config.api_key:
+                headers["x-api-key"] = self.config.api_key
+            headers["anthropic-version"] = "2023-06-01"
+        else:
+            if self.config.api_key:
+                headers["Authorization"] = f"Bearer {self.config.api_key}"
         if self.config.backend == "openrouter":
             headers["HTTP-Referer"] = "https://github.com/vlm-geometry-bench"
             headers["X-Title"] = "VLM Geometry Bench"
@@ -148,6 +154,9 @@ class VisionClient:
         Returns:
             List of message dictionaries for the API
         """
+        if self.config.backend == "anthropic":
+            return self._build_anthropic_messages(image, prompt, few_shot_examples)
+
         messages = []
 
         # Add few-shot examples if provided
@@ -185,6 +194,140 @@ class VisionClient:
 
         return messages
 
+    def _build_anthropic_messages(
+        self,
+        image: Union[str, Path, Image.Image],
+        prompt: str,
+        few_shot_examples: Optional[List[Dict[str, Any]]] = None,
+    ) -> List[Dict[str, Any]]:
+        """Build messages array in Anthropic's format.
+
+        Anthropic uses a different format for image content:
+        - type: "image" instead of "image_url"
+        - source: { type: "base64", media_type: "...", data: "..." }
+
+        Args:
+            image: Image to analyze
+            prompt: Text prompt for the model
+            few_shot_examples: Optional list of examples
+
+        Returns:
+            List of message dictionaries for Anthropic API
+        """
+        messages = []
+
+        # Add few-shot examples if provided
+        if few_shot_examples:
+            for example in few_shot_examples:
+                example_b64, example_mime = self._encode_image(example["image"])
+                messages.append({
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "image",
+                            "source": {
+                                "type": "base64",
+                                "media_type": example_mime,
+                                "data": example_b64,
+                            },
+                        },
+                        {"type": "text", "text": example["question"]},
+                    ],
+                })
+                messages.append({
+                    "role": "assistant",
+                    "content": example["answer"],
+                })
+
+        # Add the actual query
+        image_b64, image_mime = self._encode_image(image)
+
+        messages.append({
+            "role": "user",
+            "content": [
+                {
+                    "type": "image",
+                    "source": {
+                        "type": "base64",
+                        "media_type": image_mime,
+                        "data": image_b64,
+                    },
+                },
+                {"type": "text", "text": prompt},
+            ],
+        })
+
+        return messages
+
+    def _build_payload(self, messages: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Build API request payload based on backend.
+
+        Args:
+            messages: List of message dictionaries
+
+        Returns:
+            Payload dictionary for the API request
+        """
+        if self.config.backend == "anthropic":
+            # Anthropic uses different field names
+            return {
+                "model": self.config.model_name,
+                "messages": messages,
+                "max_tokens": self.config.max_tokens,
+                # Anthropic doesn't use temperature=0, use a very small value
+                "temperature": max(self.config.temperature, 0.0),
+            }
+        else:
+            return {
+                "model": self.config.model_name,
+                "messages": messages,
+                "temperature": self.config.temperature,
+                "max_tokens": self.config.max_tokens,
+            }
+
+    def _parse_response(self, data: Dict[str, Any], latency_ms: int) -> VisionResponse:
+        """Parse API response based on backend.
+
+        Args:
+            data: Response JSON data
+            latency_ms: Request latency in milliseconds
+
+        Returns:
+            VisionResponse with parsed content and usage
+        """
+        if self.config.backend == "anthropic":
+            # Anthropic response format:
+            # { "content": [{"type": "text", "text": "..."}], "usage": {"input_tokens": N, "output_tokens": N} }
+            content = ""
+            if data.get("content"):
+                for block in data["content"]:
+                    if block.get("type") == "text":
+                        content = block.get("text", "")
+                        break
+
+            # Convert Anthropic usage format to OpenAI-style for consistency
+            usage = None
+            if data.get("usage"):
+                usage = {
+                    "prompt_tokens": data["usage"].get("input_tokens", 0),
+                    "completion_tokens": data["usage"].get("output_tokens", 0),
+                }
+
+            return VisionResponse(
+                content=content,
+                model=data.get("model", self.config.model_name),
+                usage=usage,
+                latency_ms=latency_ms,
+            )
+        else:
+            # OpenAI-compatible format (Ollama, OpenRouter)
+            return VisionResponse(
+                content=data["choices"][0]["message"]["content"],
+                model=data.get("model", self.config.model_name),
+                usage=data.get("usage"),
+                latency_ms=latency_ms,
+            )
+
     async def send_request(
         self,
         image: Union[str, Path, Image.Image],
@@ -206,13 +349,7 @@ class VisionClient:
 
         messages = self._build_messages(image, prompt, few_shot_examples)
         headers = self._build_headers()
-
-        payload = {
-            "model": self.config.model_name,
-            "messages": messages,
-            "temperature": self.config.temperature,
-            "max_tokens": self.config.max_tokens,
-        }
+        payload = self._build_payload(messages)
 
         for attempt in range(self.config.retry_attempts):
             try:
@@ -226,12 +363,7 @@ class VisionClient:
 
                     if response.status == 200:
                         data = await response.json()
-                        return VisionResponse(
-                            content=data["choices"][0]["message"]["content"],
-                            model=data.get("model", self.config.model_name),
-                            usage=data.get("usage"),
-                            latency_ms=latency_ms,
-                        )
+                        return self._parse_response(data, latency_ms)
                     else:
                         error_text = await response.text()
                         logger.warning(

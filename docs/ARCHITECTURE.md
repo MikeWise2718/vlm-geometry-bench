@@ -253,9 +253,9 @@ VLM Geometry Bench is a benchmark for evaluating Vision Language Models' ability
                                are in this image?"              • Within ±N
                                                                 • % error
 
-  LOCATE     Localization      "List the (x,y) coordinates      • Mean distance
-                               of each spot in pixels"          • Detection rate
-                                                                • False positives
+  LOCATE     Localization      "List normalized (0-1)           • Mean distance
+                               coordinates of each spot"        • Detection rate
+                               (0,0)=top-left, (1,1)=bot-right  • False positives
 
   PATTERN    Pattern Type      "Is the arrangement of spots:    • Accuracy
                                random, hexagonal grid,          • Confusion matrix
@@ -283,25 +283,24 @@ VLM Geometry Bench is a benchmark for evaluating Vision Language Models' ability
                               │   (Abstract)    │
                               └────────┬────────┘
                                        │
-                    ┌──────────────────┴──────────────────┐
-                    │                                     │
-                    ▼                                     ▼
-           ┌───────────────────┐               ┌───────────────────┐
-           │   Ollama Backend  │               │ OpenRouter Backend│
-           │   ──────────────  │               │ ─────────────────  │
-           │                   │               │                   │
-           │  localhost:11434  │               │ openrouter.ai/api │
-           │  /v1/chat/complete│               │ /v1/chat/complete │
-           │                   │               │                   │
-           │  Models:          │               │  Models:          │
-           │  • llava:7b       │               │  • gpt-4o         │
-           │  • llava:13b      │               │  • claude-3.5     │
-           │  • llava:34b      │               │  • qwen2.5-vl-72b │
-           │  • minicpm-v      │               │  • gemini-pro     │
-           └───────────────────┘               └───────────────────┘
-                    │                                     │
-                    │                                     │
-                    └──────────────────┬──────────────────┘
+              ┌────────────────────────┼────────────────────────┐
+              │                        │                        │
+              ▼                        ▼                        ▼
+     ┌───────────────────┐   ┌───────────────────┐   ┌───────────────────┐
+     │   Ollama Backend  │   │ OpenRouter Backend│   │ Anthropic Backend │
+     │   ──────────────  │   │ ─────────────────  │   │ ─────────────────  │
+     │                   │   │                   │   │                   │
+     │  localhost:11434  │   │ openrouter.ai/api │   │ api.anthropic.com │
+     │  /v1/chat/complete│   │ /v1/chat/complete │   │ /v1/messages      │
+     │                   │   │                   │   │                   │
+     │  Models:          │   │  Models:          │   │  Models:          │
+     │  • llava:7b       │   │  • gpt-4o         │   │  • claude-sonnet-4│
+     │  • llama3.2-vision│   │  • qwen2.5-vl-72b │   │  • claude-opus-4.5│
+     │  • minicpm-v      │   │  • gemini-pro     │   │  • claude-haiku   │
+     └───────────────────┘   └───────────────────┘   └───────────────────┘
+              │                        │                        │
+              │                        │                        │
+              └────────────────────────┼────────────────────────┘
                                        │
                                        ▼
                          ┌───────────────────────┐
@@ -368,10 +367,10 @@ vlm-geometry-bench/
 
   EvaluationConfig
   ├── Backend Settings
-  │   ├── backend: str          "ollama" | "openrouter"
+  │   ├── backend: str          "ollama" | "openrouter" | "anthropic"
   │   ├── base_url: str         API endpoint base
-  │   ├── api_key: str?         For OpenRouter (or env var)
-  │   └── model_name: str       e.g., "llava:7b", "gpt-4o"
+  │   ├── api_key: str?         For OpenRouter/Anthropic (or env var)
+  │   └── model_name: str       e.g., "llava:7b", "claude-sonnet-4"
   │
   ├── Test Suite Settings
   │   ├── testsuite_path: str   Path to imagegen output

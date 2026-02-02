@@ -5,7 +5,7 @@ This guide covers detailed usage scenarios for VLM Geometry Bench.
 ## Prerequisites
 
 1. **Test Suite**: Generate or obtain the test suite from imagegen
-2. **VLM Backend**: Either Ollama (local) or OpenRouter API key
+2. **VLM Backend**: Ollama (local), OpenRouter API key, or Anthropic API key
 
 ### Setting Up Ollama
 
@@ -28,6 +28,16 @@ export OPENROUTER_API_KEY="sk-or-..."
 
 # Or pass via CLI
 vlm-geometry-bench --api-key "sk-or-..." --backend openrouter
+```
+
+### Setting Up Anthropic API
+
+```bash
+# Set API key as environment variable
+export ANTHROPIC_API_KEY="sk-ant-..."
+
+# Or pass via CLI
+vlm-geometry-bench --api-key "sk-ant-..." --backend anthropic
 ```
 
 ## Basic Usage
@@ -239,10 +249,11 @@ Solutions:
 
 ```
 Error: API key required for OpenRouter backend
+Error: API key required for Anthropic backend
 ```
 
 Solutions:
-1. Set environment variable: `export OPENROUTER_API_KEY="..."`
+1. Set environment variable: `export OPENROUTER_API_KEY="..."` or `export ANTHROPIC_API_KEY="..."`
 2. Pass via CLI: `--api-key "..."`
 
 ### Parse Failures

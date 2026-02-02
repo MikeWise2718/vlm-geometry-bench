@@ -175,19 +175,19 @@ class ResponseParser:
         )
 
     def parse_locate(self, response: str) -> ParsedLocateResponse:
-        """Parse a LOCATE task response to extract coordinates.
+        """Parse a LOCATE task response to extract normalized coordinates.
 
         Handles various formats:
-        - One per line: "100, 200\\n300, 400"
-        - Parentheses: "(100, 200), (300, 400)"
-        - JSON-like: "[[100, 200], [300, 400]]"
-        - Natural language: "at position 100, 200"
+        - One per line: "0.18, 0.67\\n0.40, 0.29"
+        - Parentheses: "(0.18, 0.67), (0.40, 0.29)"
+        - JSON-like: "[[0.18, 0.67], [0.40, 0.29]]"
+        - Natural language: "at position 0.18, 0.67"
 
         Args:
             response: Raw VLM response text
 
         Returns:
-            ParsedLocateResponse with list of (x, y) tuples
+            ParsedLocateResponse with list of (x, y) tuples in normalized [0,1] coordinates
         """
         text = response.strip()
         positions = []
@@ -200,7 +200,8 @@ class ResponseParser:
             )
 
         # Pattern for coordinate pairs - handles various formats
-        # Matches: "100, 200" or "(100, 200)" or "[100, 200]" or "100,200"
+        # Matches: "0.18, 0.67" or "(0.18, 0.67)" or "[0.18, 0.67]" or "0.18,0.67"
+        # Also matches integers like "0, 1" for edge cases
         coord_pattern = r"[\[\(]?\s*(\d+(?:\.\d+)?)\s*[,\s]\s*(\d+(?:\.\d+)?)\s*[\]\)]?"
 
         # Find all coordinate pairs
@@ -210,8 +211,12 @@ class ResponseParser:
             try:
                 x = float(match[0])
                 y = float(match[1])
-                # Sanity check: coordinates should be within reasonable image bounds
-                if 0 <= x <= 2000 and 0 <= y <= 2000:
+                # Sanity check: normalized coordinates should be in [0, 1]
+                # Allow slight overflow for values like 1.0 or models that return 1.01
+                if 0 <= x <= 1.1 and 0 <= y <= 1.1:
+                    # Clamp to [0, 1]
+                    x = min(max(x, 0.0), 1.0)
+                    y = min(max(y, 0.0), 1.0)
                     positions.append((x, y))
             except (ValueError, IndexError):
                 continue

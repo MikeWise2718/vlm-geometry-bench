@@ -40,18 +40,17 @@ How many spots are in this image?""",
 
     "LOCATE": """Examine this image and identify the location of each circular spot.
 
-Image dimensions: {width} x {height} pixels
-Coordinate system: (0,0) is the top-left corner, x increases rightward, y increases downward.
+Use normalized coordinates where (0.0, 0.0) is the top-left corner and (1.0, 1.0) is the bottom-right corner.
 
 Instructions:
-- Report the center coordinates of each spot
+- Report the center coordinates of each spot as normalized values between 0.0 and 1.0
 - List one coordinate pair per line
-- Format: x, y
+- Format: x, y (with values like 0.35, 0.72)
 
 Example output format:
-125, 340
-280, 150
-450, 420
+0.18, 0.67
+0.40, 0.29
+0.64, 0.82
 
 List all spot coordinates:""",
 
@@ -190,8 +189,8 @@ FEW_SHOT_EXAMPLES: Dict[str, List[FewShotExample]] = {
 
     "LOCATE": [
         FewShotExample(
-            description="Three spots located at roughly (100, 200), (350, 150), and (500, 400)",
-            answer="100, 200\n350, 150\n500, 400",
+            description="Three spots located at roughly 18% from left/67% from top, 40% from left/29% from top, and 64% from left/82% from top",
+            answer="0.18, 0.67\n0.40, 0.29\n0.64, 0.82",
             image_class="USSS",
         ),
     ],
@@ -326,10 +325,7 @@ def get_prompt_for_sample(
     kwargs = {}
 
     task_upper = task.upper()
-    if task_upper == "LOCATE":
-        kwargs["width"] = sample.width
-        kwargs["height"] = sample.height
-    elif task_upper == "SIZE":
+    if task_upper == "SIZE":
         kwargs["scale_inverse"] = sample.scale_inverse
 
     return build_few_shot_prompt(task, num_shots, **kwargs)

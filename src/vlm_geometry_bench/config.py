@@ -12,7 +12,7 @@ VALID_IMAGE_CLASSES = {"CTRL", "USSS", "USDS", "HSFR", "HSRP", "HSDN"}
 VALID_TASKS = {"COUNT", "LOCATE", "PATTERN", "SIZE", "DEFECT"}
 
 # Valid backends
-VALID_BACKENDS = {"ollama", "openrouter"}
+VALID_BACKENDS = {"ollama", "openrouter", "anthropic"}
 
 
 @dataclass
@@ -55,10 +55,14 @@ class EvaluationConfig:
         # Set default base_url based on backend
         if self.backend == "openrouter" and self.base_url == "http://localhost:11434":
             self.base_url = "https://openrouter.ai/api/v1"
+        elif self.backend == "anthropic" and self.base_url == "http://localhost:11434":
+            self.base_url = "https://api.anthropic.com"
 
         # Get API key from environment if not provided
         if self.api_key is None and self.backend == "openrouter":
             self.api_key = os.environ.get("OPENROUTER_API_KEY")
+        elif self.api_key is None and self.backend == "anthropic":
+            self.api_key = os.environ.get("ANTHROPIC_API_KEY")
 
         # Validate backend
         if self.backend not in VALID_BACKENDS:
@@ -89,5 +93,7 @@ class EvaluationConfig:
         """Get the chat completions API endpoint."""
         if self.backend == "ollama":
             return f"{self.base_url}/v1/chat/completions"
+        elif self.backend == "anthropic":
+            return f"{self.base_url}/v1/messages"
         else:  # openrouter
             return f"{self.base_url}/chat/completions"

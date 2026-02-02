@@ -75,33 +75,33 @@ class TestParseCount:
 
 
 class TestParseLocate:
-    """Tests for LOCATE response parsing."""
+    """Tests for LOCATE response parsing with normalized coordinates."""
 
     @pytest.fixture
     def parser(self):
         return ResponseParser()
 
     def test_parse_parentheses_format(self, parser):
-        """Parse (x, y) format."""
-        result = parser.parse_locate("(100, 200), (300, 400)")
+        """Parse (x, y) format with normalized coordinates."""
+        result = parser.parse_locate("(0.18, 0.67), (0.40, 0.29)")
         assert len(result.positions) == 2
-        assert (100.0, 200.0) in result.positions
-        assert (300.0, 400.0) in result.positions
+        assert (0.18, 0.67) in result.positions
+        assert (0.40, 0.29) in result.positions
 
     def test_parse_bracket_format(self, parser):
-        """Parse [x, y] format."""
-        result = parser.parse_locate("[[100, 200], [300, 400]]")
+        """Parse [x, y] format with normalized coordinates."""
+        result = parser.parse_locate("[[0.18, 0.67], [0.40, 0.29]]")
         assert len(result.positions) == 2
 
     def test_parse_one_per_line(self, parser):
         """Parse coordinates one per line."""
-        result = parser.parse_locate("100, 200\n300, 400\n500, 600")
+        result = parser.parse_locate("0.18, 0.67\n0.40, 0.29\n0.64, 0.82")
         assert len(result.positions) == 3
 
     def test_parse_floats(self, parser):
         """Parse floating point coordinates."""
-        result = parser.parse_locate("(100.5, 200.5)")
-        assert result.positions[0] == (100.5, 200.5)
+        result = parser.parse_locate("(0.185, 0.672)")
+        assert result.positions[0] == (0.185, 0.672)
 
     def test_parse_empty_indicates_no_spots(self, parser):
         """Response saying 'no spots' should return empty list."""
@@ -116,14 +116,28 @@ class TestParseLocate:
         assert not result.success
 
     def test_rejects_out_of_bounds(self, parser):
-        """Reject coordinates outside reasonable image bounds."""
-        result = parser.parse_locate("(5000, 5000)")
+        """Reject coordinates outside normalized range [0, 1]."""
+        result = parser.parse_locate("(5.0, 5.0)")
         assert len(result.positions) == 0
 
     def test_parse_count_property(self, parser):
         """Count property returns number of positions."""
-        result = parser.parse_locate("(100, 200), (300, 400)")
+        result = parser.parse_locate("(0.18, 0.67), (0.40, 0.29)")
         assert result.count == 2
+
+    def test_clamps_slightly_over_one(self, parser):
+        """Values slightly over 1.0 should be clamped to 1.0."""
+        result = parser.parse_locate("(1.05, 0.99)")
+        assert len(result.positions) == 1
+        assert result.positions[0] == (1.0, 0.99)
+
+    def test_accepts_edge_values(self, parser):
+        """Accept values at exactly 0 and 1."""
+        result = parser.parse_locate("(0, 0), (1, 1), (0.5, 0.5)")
+        assert len(result.positions) == 3
+        assert (0.0, 0.0) in result.positions
+        assert (1.0, 1.0) in result.positions
+        assert (0.5, 0.5) in result.positions
 
 
 class TestParsePattern:

@@ -175,6 +175,17 @@ class TestVisionClientHeaders:
 
         assert headers["Authorization"] == "Bearer my-secret-key"
 
+    def test_anthropic_headers(self):
+        """Anthropic backend uses x-api-key header."""
+        config = EvaluationConfig(backend="anthropic", api_key="test-key")
+        client = VisionClient(config)
+        headers = client._build_headers()
+
+        assert headers["Content-Type"] == "application/json"
+        assert headers["x-api-key"] == "test-key"
+        assert headers["anthropic-version"] == "2023-06-01"
+        assert "Authorization" not in headers
+
 
 class TestVisionClientMessages:
     """Tests for message building."""
@@ -182,6 +193,11 @@ class TestVisionClientMessages:
     @pytest.fixture
     def client(self):
         config = EvaluationConfig()
+        return VisionClient(config)
+
+    @pytest.fixture
+    def anthropic_client(self):
+        config = EvaluationConfig(backend="anthropic")
         return VisionClient(config)
 
     def test_build_simple_message(self, client):
@@ -214,6 +230,24 @@ class TestVisionClientMessages:
         assert messages[1]["content"] == "5"
         assert messages[4]["role"] == "user"
 
+    def test_anthropic_message_format(self, anthropic_client):
+        """Anthropic backend uses different image format."""
+        img = Image.new("RGB", (100, 100), color="red")
+        messages = anthropic_client._build_messages(img, "How many spots?")
+
+        assert len(messages) == 1
+        assert messages[0]["role"] == "user"
+        content = messages[0]["content"]
+        assert len(content) == 2  # image + text
+
+        # Anthropic uses 'image' type with 'source' dict
+        image_block = content[0]
+        assert image_block["type"] == "image"
+        assert "source" in image_block
+        assert image_block["source"]["type"] == "base64"
+        assert image_block["source"]["media_type"] == "image/png"
+        assert len(image_block["source"]["data"]) > 0
+
 
 class TestVisionClientAsyncContext:
     """Tests for async context manager."""
@@ -245,6 +279,50 @@ class TestVisionClientAsyncContext:
         config = EvaluationConfig()
         client = VisionClient(config)
         await client.close()  # Should not raise
+
+
+class TestVisionClientResponseParsing:
+    """Tests for response parsing across backends."""
+
+    @pytest.fixture
+    def client(self):
+        config = EvaluationConfig()
+        return VisionClient(config)
+
+    @pytest.fixture
+    def anthropic_client(self):
+        config = EvaluationConfig(backend="anthropic")
+        return VisionClient(config)
+
+    def test_parse_openai_response(self, client):
+        """Parse OpenAI-style response (Ollama, OpenRouter)."""
+        data = {
+            "choices": [{"message": {"content": "42 spots"}}],
+            "model": "llava:7b",
+            "usage": {"prompt_tokens": 100, "completion_tokens": 10},
+        }
+        response = client._parse_response(data, latency_ms=50)
+
+        assert response.content == "42 spots"
+        assert response.model == "llava:7b"
+        assert response.input_tokens == 100
+        assert response.output_tokens == 10
+        assert response.latency_ms == 50
+
+    def test_parse_anthropic_response(self, anthropic_client):
+        """Parse Anthropic-style response."""
+        data = {
+            "content": [{"type": "text", "text": "42 spots"}],
+            "model": "claude-sonnet-4-20250514",
+            "usage": {"input_tokens": 150, "output_tokens": 15},
+        }
+        response = anthropic_client._parse_response(data, latency_ms=100)
+
+        assert response.content == "42 spots"
+        assert response.model == "claude-sonnet-4-20250514"
+        assert response.input_tokens == 150
+        assert response.output_tokens == 15
+        assert response.latency_ms == 100
 
 
 class TestVisionClientSendRequest:

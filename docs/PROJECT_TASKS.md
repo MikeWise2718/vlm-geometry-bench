@@ -19,6 +19,9 @@ This document tracks the implementation tasks for VLM Geometry Bench.
 | 11 | Completed | Write unit tests for core components |
 | 12 | Completed | Run baseline evaluation with multiple VLMs |
 | 13 | Completed | Document project and create usage guide |
+| 14 | Completed | Add Anthropic API backend support |
+| 15 | Completed | Implement LOCATE task with normalized coordinates |
+| 16 | Completed | Run LOCATE baseline evaluation |
 
 ## Task Details
 
@@ -197,6 +200,38 @@ Task dependency graph:
 13 (Documentation) ← depends on 9, 12 ────────────────────────────────────────┘
 ```
 
+### Task 14: Add Anthropic API backend support
+
+**Description:** Add direct Anthropic API support as a third backend option alongside Ollama and OpenRouter.
+
+**Deliverables:**
+- Updated `vision_client.py` with Anthropic message format
+- Updated `config.py` with anthropic backend validation
+- Updated CLI with anthropic backend option
+- Support for Claude 4 and 4.5 model families
+
+### Task 15: Implement LOCATE task with normalized coordinates
+
+**Description:** Update the LOCATE task to use normalized (0-1) coordinates instead of pixel coordinates for resolution-independent evaluation.
+
+**Deliverables:**
+- Updated `prompts.py` with normalized coordinate prompt
+- Updated `response_parser.py` to validate [0,1] range
+- Updated `metrics.py` with 0.05 (5%) default tolerance
+- Updated `evaluator.py` to convert ground truth to normalized coords
+- Updated unit tests for normalized coordinates
+
+### Task 16: Run LOCATE baseline evaluation
+
+**Description:** Run LOCATE task evaluation with Claude Sonnet 4 across all image classes.
+
+**Deliverables:**
+- Full LOCATE evaluation on 92 images
+- Results showing 26.1% overall detection rate
+- HSFR (hexagonal) best at 61.3%, random patterns at ~20%
+- Documentation updated with LOCATE results
+
 ## Timeline
 
-All 13 tasks completed in January 2026.
+Tasks 1-13 completed in January 2026.
+Tasks 14-16 completed in February 2026.

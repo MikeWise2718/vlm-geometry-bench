@@ -27,8 +27,10 @@ from .metrics import (
 logger = logging.getLogger(__name__)
 
 
-# OpenRouter model pricing (input/output per 1M tokens)
-OPENROUTER_PRICING = {
+# Model pricing (input/output per 1M tokens)
+# Used for cost estimation for OpenRouter and Anthropic backends
+MODEL_PRICING = {
+    # OpenRouter models
     "openai/gpt-4o": (2.50, 10.00),
     "openai/gpt-4o-mini": (0.15, 0.60),
     "anthropic/claude-3.5-sonnet": (3.00, 15.00),
@@ -36,8 +38,25 @@ OPENROUTER_PRICING = {
     "qwen/qwen2.5-vl-72b-instruct": (0.40, 0.40),
     "google/gemini-pro-1.5": (1.25, 5.00),
     "meta-llama/llama-3.2-90b-vision-instruct": (0.90, 0.90),
+    # Anthropic direct API models (Jan 2025 pricing)
+    "claude-3-5-sonnet-20241022": (3.00, 15.00),
+    "claude-sonnet-4-20250514": (3.00, 15.00),
+    "claude-3-5-haiku-20241022": (0.80, 4.00),
+    "claude-3-haiku-20240307": (0.25, 1.25),
+    "claude-3-opus-20240229": (15.00, 75.00),
+    "claude-opus-4-20250514": (15.00, 75.00),
+    # Aliases for common model names
+    "claude-3-5-sonnet": (3.00, 15.00),
+    "claude-3-5-haiku": (0.80, 4.00),
+    "claude-3-haiku": (0.25, 1.25),
+    "claude-3-opus": (15.00, 75.00),
+    "claude-sonnet-4": (3.00, 15.00),
+    "claude-opus-4": (15.00, 75.00),
     "default": (1.00, 3.00),
 }
+
+# Backwards compatibility alias
+OPENROUTER_PRICING = MODEL_PRICING
 
 
 @dataclass
@@ -67,12 +86,22 @@ class UsageStats:
         return ((self.total_requests - self.failed_requests) / self.total_requests) * 100
 
     def estimate_cost(self, model_name: str) -> Optional[float]:
-        """Estimate cost for OpenRouter based on model pricing."""
-        pricing = OPENROUTER_PRICING.get("default")
-        for pattern, costs in OPENROUTER_PRICING.items():
-            if pattern != "default" and pattern in model_name.lower():
-                pricing = costs
-                break
+        """Estimate cost based on model pricing.
+
+        Works for both OpenRouter and Anthropic backends.
+        """
+        pricing = MODEL_PRICING.get("default")
+
+        # First try exact match
+        if model_name in MODEL_PRICING:
+            pricing = MODEL_PRICING[model_name]
+        else:
+            # Try pattern matching (case-insensitive substring match)
+            model_lower = model_name.lower()
+            for pattern, costs in MODEL_PRICING.items():
+                if pattern != "default" and pattern in model_lower:
+                    pricing = costs
+                    break
 
         input_cost, output_cost = pricing
         cost = (self.input_tokens / 1_000_000 * input_cost +
@@ -272,10 +301,14 @@ class GeometryBenchEvaluator:
             )
 
         elif task == "LOCATE":
-            # Convert ground truth positions to (x, y) tuples in pixels
+            # Convert ground truth positions to normalized (0-1) coordinates
+            # Ground truth is in micrometers, convert to pixels then normalize
             scale = 1.0 / sample.scale_inverse  # pixels per micrometer
             gt_positions = [
-                (pos.x_um * scale, pos.y_um * scale)
+                (
+                    (pos.x_um * scale) / sample.width,   # normalize x to [0, 1]
+                    (pos.y_um * scale) / sample.height,  # normalize y to [0, 1]
+                )
                 for pos in gt.positions
             ]
             return self.metrics.compute_locate_metrics(
@@ -378,7 +411,7 @@ class GeometryBenchEvaluator:
             "total_tokens": self.usage_stats.total_tokens,
         }
 
-        if self.config.backend == "openrouter":
+        if self.config.backend in ("openrouter", "anthropic"):
             cost = self.usage_stats.estimate_cost(self.config.model_name)
             if cost:
                 usage["estimated_cost_usd"] = round(cost, 4)

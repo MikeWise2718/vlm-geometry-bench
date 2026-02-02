@@ -35,7 +35,7 @@ See `docs/ARCHITECTURE.md` for detailed diagrams and component descriptions.
 
 Key components:
 - `config.py` - EvaluationConfig dataclass
-- `vision_client.py` - VLM API communication (OpenRouter, Ollama)
+- `vision_client.py` - VLM API communication (Ollama, OpenRouter, Anthropic)
 - `data_loader.py` - Load imagegen test suite + manifest
 - `prompts.py` - Task-specific prompts (COUNT, LOCATE, PATTERN, SIZE, DEFECT)
 - `response_parser.py` - Parse VLM responses to structured data
@@ -62,6 +62,10 @@ uv run vlm-geometry-bench --samples 5 --classes CTRL,USSS --tasks COUNT
 
 # Run with OpenRouter
 uv run vlm-geometry-bench --backend openrouter --model openai/gpt-4o \
+    --testsuite d:/python/imagegen/testsuite
+
+# Run with Anthropic API
+uv run vlm-geometry-bench --backend anthropic --model claude-sonnet-4-20250514 \
     --testsuite d:/python/imagegen/testsuite
 
 # Run tests

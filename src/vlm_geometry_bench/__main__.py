@@ -33,7 +33,7 @@ def setup_logging(verbose: bool):
 @click.command()
 @click.option(
     "--backend",
-    type=click.Choice(["ollama", "openrouter"]),
+    type=click.Choice(["ollama", "openrouter", "anthropic"]),
     default="ollama",
     help="API backend to use",
 )
@@ -45,8 +45,7 @@ def setup_logging(verbose: bool):
 @click.option(
     "--api-key",
     default=None,
-    envvar="OPENROUTER_API_KEY",
-    help="API key (required for OpenRouter, uses OPENROUTER_API_KEY env var)",
+    help="API key (required for OpenRouter/Anthropic, uses OPENROUTER_API_KEY or ANTHROPIC_API_KEY env vars)",
 )
 @click.option(
     "--model",
@@ -149,6 +148,9 @@ def main(
       # OpenRouter with GPT-4o
       vlm-geometry-bench --backend openrouter --model openai/gpt-4o --tasks COUNT,PATTERN
 
+      # Anthropic Claude Sonnet
+      vlm-geometry-bench --backend anthropic --model claude-sonnet-4-20250514 --tasks COUNT,PATTERN
+
       # Quick test with limited samples
       vlm-geometry-bench --samples 5 --classes CTRL,USSS --tasks COUNT
     """
@@ -163,11 +165,21 @@ def main(
 
     num_shots = int(shots)
 
-    # Validate API key for OpenRouter
-    if backend == "openrouter" and not api_key:
-        raise click.ClickException(
-            "API key required for OpenRouter. Set --api-key or OPENROUTER_API_KEY env var."
-        )
+    # Validate API key for cloud backends
+    if backend == "openrouter":
+        if not api_key:
+            api_key = os.environ.get("OPENROUTER_API_KEY")
+        if not api_key:
+            raise click.ClickException(
+                "API key required for OpenRouter. Set --api-key or OPENROUTER_API_KEY env var."
+            )
+    elif backend == "anthropic":
+        if not api_key:
+            api_key = os.environ.get("ANTHROPIC_API_KEY")
+        if not api_key:
+            raise click.ClickException(
+                "API key required for Anthropic. Set --api-key or ANTHROPIC_API_KEY env var."
+            )
 
     # Validate classes
     if class_list:
@@ -188,7 +200,9 @@ def main(
     if base_url is None:
         if backend == "ollama":
             base_url = os.environ.get("OLLAMA_HOST", "http://localhost:11434")
-        else:
+        elif backend == "anthropic":
+            base_url = "https://api.anthropic.com"
+        else:  # openrouter
             base_url = "https://openrouter.ai/api/v1"
 
     # Create config

@@ -8,7 +8,7 @@ VLM Geometry Bench tests VLMs on fundamental visual perception tasks using synth
 
 - **Spot Counting** - Count the number of circular spots in an image
 - **Pattern Recognition** - Classify spot arrangements (random, hexagonal, empty)
-- **Localization** - List coordinates of all spots (experimental)
+- **Localization** - Identify spot positions using normalized (0-1) coordinates
 - **Size Estimation** - Estimate spot diameter in micrometers (experimental)
 - **Defect Detection** - Identify missing spots in hexagonal patterns (experimental)
 
@@ -58,6 +58,20 @@ uv run vlm-geometry-bench \
     --tasks COUNT,PATTERN
 ```
 
+### Using Anthropic API
+
+```bash
+# Set your API key
+export ANTHROPIC_API_KEY="your-key-here"
+
+# Run evaluation with Claude
+uv run vlm-geometry-bench \
+    --backend anthropic \
+    --model claude-sonnet-4-20250514 \
+    --testsuite d:/python/imagegen/testsuite \
+    --tasks COUNT,PATTERN,LOCATE
+```
+
 ### Quick Test (Limited Samples)
 
 ```bash
@@ -74,9 +88,9 @@ uv run vlm-geometry-bench \
 Usage: vlm-geometry-bench [OPTIONS]
 
 Options:
-  --backend [ollama|openrouter]  API backend to use (default: ollama)
+  --backend [ollama|openrouter|anthropic]  API backend to use (default: ollama)
   --base-url TEXT                API base URL (auto-detected by default)
-  --api-key TEXT                 API key (required for OpenRouter)
+  --api-key TEXT                 API key (required for OpenRouter/Anthropic)
   --model TEXT                   Model name (default: llava:7b)
   --testsuite TEXT               Path to imagegen test suite directory
   --classes TEXT                 Comma-separated image classes to evaluate
@@ -107,43 +121,45 @@ Options:
 |------|-------------|----------------|
 | COUNT | Count spots in the image | Exact match rate |
 | PATTERN | Classify arrangement (RANDOM/HEXAGONAL/EMPTY/SINGLE) | Accuracy |
-| LOCATE | List (x,y) coordinates of spots | Detection rate |
+| LOCATE | Identify spot positions in normalized (0-1) coordinates | Detection rate |
 | SIZE | Estimate spot diameter in micrometers | Within tolerance rate |
 | DEFECT | Detect missing/extra spots | Detection accuracy |
 
 ## Baseline Results
 
-Evaluation on 92 images with COUNT and PATTERN tasks (0-shot):
+Evaluation on 92 images with COUNT, PATTERN, and LOCATE tasks (0-shot). See [docs/BASELINE_RESULTS.md](docs/BASELINE_RESULTS.md) for detailed results.
 
 ### Overall Performance
 
+#### Claude 4.5 Models (Anthropic API)
+
+| Model | COUNT Exact | PATTERN Acc | LOCATE Det | Time | Cost |
+|-------|-------------|-------------|------------|------|------|
+| claude-opus-4.5 | 3.3% | **67.4%** | - | 760s | $1.64 |
+| claude-sonnet-4.5 | 10.9% | 65.2% | - | 391s | $0.33 |
+| claude-haiku-4.5 | **15.2%** | 51.1% | - | 272s | $0.11 |
+| claude-sonnet-4 | - | - | **26.1%** | 561s | $0.70 |
+
+#### Local Models (Ollama)
+
 | Model | Size | COUNT Exact | PATTERN Acc | Time |
 |-------|------|-------------|-------------|------|
-| llava:7b | 4.7 GB | 2.2% | 48.9% | 26s |
 | llama3.2-vision | 7.8 GB | 6.5% | 66.3% | 159s |
 | minicpm-v | 5.5 GB | 4.3% | 51.1% | 318s |
-| granite3.2-vision:2b | 2.4 GB | ~1%* | 39.1% | 116s |
 | qwen3-vl:8b | 6.1 GB | ~4%* | 58.8% | 671s |
+| llava:7b | 4.7 GB | 2.2% | 48.9% | 26s |
+| granite3.2-vision:2b | 2.4 GB | ~1%* | 39.1% | 116s |
 
 *Low success rate due to response parsing issues
 
-### Pattern Recognition by Type
-
-| Model | EMPTY | SINGLE | RANDOM | HEXAGONAL |
-|-------|-------|--------|--------|-----------|
-| llava:7b | 50% | 50% | 97% | 0% |
-| llama3.2-vision | 0% | 100% | 91% | 42% |
-| minicpm-v | 100% | 100% | 100% | 0% |
-| granite3.2-vision:2b | 100% | 0% | 78% | 0% |
-| qwen3-vl:8b | 100% | 100% | 100% | 0% |
-
 ### Key Findings
 
-1. **Counting is challenging**: All models struggle with exact spot counting, achieving only 2-7% exact match rates
-2. **Random patterns are easier**: Models achieve 78-100% accuracy on RANDOM patterns
-3. **Hexagonal patterns are difficult**: Most models fail to recognize hexagonal arrangements (0-42%)
-4. **llama3.2-vision performs best overall**: Best hexagonal recognition (42%) and highest pattern accuracy (66.3%)
-5. **Speed vs accuracy tradeoff**: llava:7b is fastest (26s) but has lowest accuracy; qwen3-vl is slowest (671s) with moderate accuracy
+1. **Counting is challenging**: All models struggle with exact spot counting (2-15% exact match)
+2. **Claude Haiku 4.5 is best for counting**: Surprisingly outperforms larger Claude models (15.2% vs 3.3%)
+3. **Random patterns are easier**: Models achieve 78-100% accuracy on RANDOM patterns
+4. **Hexagonal patterns are difficult**: Most models fail to recognize hexagonal arrangements (0-42%)
+5. **LOCATE task shows promise**: Claude Sonnet 4 achieves 26.1% detection rate with 5% tolerance; hexagonal patterns (61.3%) are easier to locate than random (20.7%)
+6. **Cost efficiency**: Claude Haiku 4.5 is 15x cheaper than Opus with better counting accuracy
 
 ## Output Files
 
