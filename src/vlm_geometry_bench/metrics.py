@@ -128,6 +128,11 @@ class SampleResult:
     latency_ms: Optional[int] = None
     input_tokens: int = 0
     output_tokens: int = 0
+    # Additional fields for traceability
+    model: Optional[str] = None  # Model name that generated this result
+    prompt: Optional[str] = None  # Prompt text sent to the model
+    ground_truth: Optional[Dict[str, Any]] = None  # Ground truth data for traceability
+    prediction: Optional[Dict[str, Any]] = None  # Parsed prediction data for traceability
 
 
 # =============================================================================

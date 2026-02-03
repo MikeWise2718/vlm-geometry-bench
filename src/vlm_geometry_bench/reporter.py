@@ -147,7 +147,7 @@ class ResultsReporter:
         # Convert to list of dicts
         data = []
         for r in sample_results:
-            data.append({
+            entry = {
                 "sample_id": r.sample_id,
                 "image_class": r.image_class,
                 "task": r.task,
@@ -158,7 +158,17 @@ class ResultsReporter:
                 "latency_ms": r.latency_ms,
                 "input_tokens": r.input_tokens,
                 "output_tokens": r.output_tokens,
-            })
+            }
+            # Add new fields if present
+            if r.model:
+                entry["model"] = r.model
+            if r.prompt:
+                entry["prompt"] = r.prompt
+            if r.ground_truth:
+                entry["ground_truth"] = r.ground_truth
+            if r.prediction:
+                entry["prediction"] = r.prediction
+            data.append(entry)
 
         with open(raw_path, "w") as f:
             json.dump(data, f, indent=2)
@@ -182,8 +192,15 @@ class ResultsReporter:
         config_table = Table(show_header=False, box=None, padding=(0, 2))
         config_table.add_column("Key", style="cyan")
         config_table.add_column("Value", style="white")
-        config_table.add_row("Model", results.config.get("model", ""))
-        config_table.add_row("Backend", results.config.get("backend", ""))
+
+        # Handle both single and multi-model configs
+        if "models" in results.config:
+            config_table.add_row("Models", ", ".join(results.config.get("models", [])))
+            config_table.add_row("Backends", ", ".join(results.config.get("backends", [])))
+        else:
+            config_table.add_row("Model", results.config.get("model", ""))
+            config_table.add_row("Backend", results.config.get("backend", ""))
+
         config_table.add_row("Tasks", ", ".join(results.config.get("tasks", [])))
         config_table.add_row("Classes", ", ".join(results.config.get("image_classes", [])))
         self.console.print(config_table)
@@ -352,8 +369,14 @@ def report_results(results: EvaluationResults, output_dir: str = "./results") ->
     Returns:
         Path to output directory
     """
+    # Handle both single and multi-model configs
+    if "models" in results.config:
+        model_name = "comparison" if len(results.config["models"]) > 1 else results.config["models"][0]
+    else:
+        model_name = results.config.get("model", "unknown")
+
     reporter = ResultsReporter(
         output_dir=output_dir,
-        model_name=results.config.get("model", "unknown"),
+        model_name=model_name,
     )
     return reporter.save_all(results)
