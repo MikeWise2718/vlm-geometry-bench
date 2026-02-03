@@ -12,7 +12,7 @@ from PIL import Image
 from tqdm import tqdm
 
 from .config import EvaluationConfig, ModelSpec
-from .data_loader import TestSuiteLoader, BenchmarkSample
+from .data_loader import SuiteLoader, BenchmarkSample
 from .vision_client import VisionClient, VisionResponse
 from .prompts import get_prompt_for_sample, get_expected_pattern
 from .response_parser import ResponseParser
@@ -150,7 +150,7 @@ class GeometryBenchEvaluator:
             config: Evaluation configuration
         """
         self.config = config
-        self.loader = TestSuiteLoader(config.testsuite_path)
+        self.loader = SuiteLoader(config.testsuite_path)
         self.parser = ResponseParser()
         self.metrics = MetricsCalculator(count_tolerance=config.count_tolerance)
 
@@ -493,7 +493,7 @@ class GeometryBenchEvaluator:
             return
 
         from .traceability.schemas import (
-            TestMetadata,
+            SampleTestResult,
             ConversationHistory,
             ConversationTurn,
         )
@@ -506,7 +506,7 @@ class GeometryBenchEvaluator:
         self._artifact_manager.create_image_symlink(test_dir, result.sample_id)
 
         # Build test metadata
-        test_metadata = TestMetadata(
+        test_metadata = SampleTestResult(
             test_id=f"{result.sample_id}_{task}",
             sample_id=result.sample_id,
             model=model,

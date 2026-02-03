@@ -107,7 +107,7 @@ class ModelMetadata(BaseModel):
 # =============================================================================
 
 
-class TestMetadata(BaseModel):
+class SampleTestResult(BaseModel):
     """Metadata for a single test (sample + task + model)."""
 
     test_id: str = Field(description="Unique test identifier (sample_id_task)")

@@ -9,7 +9,7 @@ import yaml
 from PIL import Image
 
 from vlm_geometry_bench.data_loader import (
-    TestSuiteLoader,
+    SuiteLoader,
     BenchmarkSample,
     GroundTruth,
     SpotPosition,
@@ -71,12 +71,12 @@ def sample_testsuite(tmp_path):
     return tmp_path
 
 
-class TestTestSuiteLoader:
-    """Tests for TestSuiteLoader class."""
+class TestSuiteLoader:
+    """Tests for SuiteLoader class."""
 
     def test_load_manifest(self, sample_testsuite):
         """Load manifest from test suite."""
-        loader = TestSuiteLoader(str(sample_testsuite))
+        loader = SuiteLoader(str(sample_testsuite))
         manifest = loader.load_manifest()
 
         assert manifest["version"] == "1.0.0"
@@ -85,20 +85,20 @@ class TestTestSuiteLoader:
 
     def test_manifest_cached(self, sample_testsuite):
         """Manifest is cached after first load."""
-        loader = TestSuiteLoader(str(sample_testsuite))
+        loader = SuiteLoader(str(sample_testsuite))
         manifest1 = loader.manifest
         manifest2 = loader.manifest
         assert manifest1 is manifest2
 
     def test_missing_manifest_raises(self, tmp_path):
         """Missing manifest raises FileNotFoundError."""
-        loader = TestSuiteLoader(str(tmp_path))
+        loader = SuiteLoader(str(tmp_path))
         with pytest.raises(FileNotFoundError, match="Manifest not found"):
             loader.load_manifest()
 
     def test_load_all_samples(self, sample_testsuite):
         """Load all samples from test suite."""
-        loader = TestSuiteLoader(str(sample_testsuite))
+        loader = SuiteLoader(str(sample_testsuite))
         samples = loader.load_samples()
 
         assert len(samples) == 3
@@ -106,7 +106,7 @@ class TestTestSuiteLoader:
 
     def test_load_samples_filter_by_class(self, sample_testsuite):
         """Filter samples by image class."""
-        loader = TestSuiteLoader(str(sample_testsuite))
+        loader = SuiteLoader(str(sample_testsuite))
         samples = loader.load_samples(image_classes=["CTRL"])
 
         assert len(samples) == 1
@@ -114,7 +114,7 @@ class TestTestSuiteLoader:
 
     def test_load_samples_multiple_classes(self, sample_testsuite):
         """Filter samples by multiple classes."""
-        loader = TestSuiteLoader(str(sample_testsuite))
+        loader = SuiteLoader(str(sample_testsuite))
         samples = loader.load_samples(image_classes=["CTRL", "HSFR"])
 
         assert len(samples) == 2
@@ -123,14 +123,14 @@ class TestTestSuiteLoader:
 
     def test_load_samples_with_limit(self, sample_testsuite):
         """Limit number of samples loaded."""
-        loader = TestSuiteLoader(str(sample_testsuite))
+        loader = SuiteLoader(str(sample_testsuite))
         samples = loader.load_samples(limit=2)
 
         assert len(samples) == 2
 
     def test_sample_has_image(self, sample_testsuite):
         """Loaded sample has PIL Image."""
-        loader = TestSuiteLoader(str(sample_testsuite))
+        loader = SuiteLoader(str(sample_testsuite))
         samples = loader.load_samples(limit=1)
 
         assert isinstance(samples[0].image, Image.Image)
@@ -138,7 +138,7 @@ class TestTestSuiteLoader:
 
     def test_sample_has_ground_truth(self, sample_testsuite):
         """Loaded sample has ground truth."""
-        loader = TestSuiteLoader(str(sample_testsuite))
+        loader = SuiteLoader(str(sample_testsuite))
         samples = loader.load_samples(image_classes=["USSS"])
 
         gt = samples[0].ground_truth
@@ -149,7 +149,7 @@ class TestTestSuiteLoader:
 
     def test_sample_positions_from_csv(self, sample_testsuite):
         """Spot positions loaded from CSV."""
-        loader = TestSuiteLoader(str(sample_testsuite))
+        loader = SuiteLoader(str(sample_testsuite))
         samples = loader.load_samples(image_classes=["USSS"])
 
         positions = samples[0].ground_truth.positions
@@ -160,7 +160,7 @@ class TestTestSuiteLoader:
 
     def test_get_class_summary(self, sample_testsuite):
         """Get count of images per class."""
-        loader = TestSuiteLoader(str(sample_testsuite))
+        loader = SuiteLoader(str(sample_testsuite))
         summary = loader.get_class_summary()
 
         assert summary["CTRL"] == 1
@@ -169,7 +169,7 @@ class TestTestSuiteLoader:
 
     def test_get_pattern_for_class(self, sample_testsuite):
         """Get expected pattern for class."""
-        loader = TestSuiteLoader(str(sample_testsuite))
+        loader = SuiteLoader(str(sample_testsuite))
 
         assert loader.get_pattern_for_class("CTRL") == "EMPTY"
         assert loader.get_pattern_for_class("USSS") == "RANDOM"
@@ -236,7 +236,7 @@ class TestBenchmarkSample:
 
     def test_create_sample(self, sample_testsuite):
         """Create a benchmark sample."""
-        loader = TestSuiteLoader(str(sample_testsuite))
+        loader = SuiteLoader(str(sample_testsuite))
         samples = loader.load_samples(limit=1)
         sample = samples[0]
 

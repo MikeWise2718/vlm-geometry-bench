@@ -10,7 +10,7 @@ from .schemas import (
     ModelRunInfo,
     RunMetadata,
     ModelMetadata,
-    TestMetadata,
+    SampleTestResult,
     ConversationTurn,
     ConversationHistory,
 )
@@ -26,7 +26,7 @@ __all__ = [
     "ModelRunInfo",
     "RunMetadata",
     "ModelMetadata",
-    "TestMetadata",
+    "SampleTestResult",
     "ConversationTurn",
     "ConversationHistory",
     # Managers

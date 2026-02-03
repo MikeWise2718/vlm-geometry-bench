@@ -64,7 +64,7 @@ class BenchmarkSample:
     scale_inverse: float = 0.14  # micrometers per pixel
 
 
-class TestSuiteLoader:
+class SuiteLoader:
     """Loads the imagegen test suite for evaluation."""
 
     def __init__(self, testsuite_path: str):
