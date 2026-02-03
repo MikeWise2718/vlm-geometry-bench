@@ -48,6 +48,7 @@ class ModelRunInfo(BaseModel):
 
     model: str = Field(description="Model name")
     backend: str = Field(description="Backend used (ollama, openrouter, anthropic)")
+    base_url: Optional[str] = Field(default=None, description="API base URL (e.g., Ollama host)")
     elapsed_seconds: float = Field(description="Time taken for this model's evaluation")
     total_tests: int = Field(description="Number of tests run for this model")
     success_rate: float = Field(description="Percentage of successful API calls")
@@ -80,6 +81,7 @@ class ModelMetadata(BaseModel):
 
     model: str = Field(description="Model name")
     backend: str = Field(description="Backend used")
+    base_url: Optional[str] = Field(default=None, description="API base URL (e.g., Ollama host)")
     run_id: str = Field(description="Parent run ID")
     elapsed_seconds: float = Field(description="Time taken for evaluation")
     total_tests: int = Field(description="Total tests run")

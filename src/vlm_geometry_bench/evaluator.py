@@ -117,6 +117,7 @@ class ModelEvaluationResults:
 
     model: str
     backend: str
+    base_url: str
     usage: UsageStats
     sample_results: List[SampleResult]
     results_by_task: Dict[str, Dict[str, Any]]
@@ -292,6 +293,7 @@ class GeometryBenchEvaluator:
         return ModelEvaluationResults(
             model=model_spec.model_name,
             backend=model_spec.backend,
+            base_url=model_spec.base_url,
             usage=usage_stats,
             sample_results=sample_results,
             results_by_task=results_by_task,
@@ -864,6 +866,7 @@ class GeometryBenchEvaluator:
             model_run_infos.append(ModelRunInfo(
                 model=model_name,
                 backend=mr.backend,
+                base_url=mr.base_url,
                 elapsed_seconds=mr.usage.elapsed_seconds,
                 total_tests=mr.usage.total_requests,
                 success_rate=mr.usage.success_rate,
@@ -895,6 +898,7 @@ class GeometryBenchEvaluator:
             model_metadata = ModelMetadata(
                 model=model_name,
                 backend=mr.backend,
+                base_url=mr.base_url,
                 run_id=self._artifact_manager.run_id,
                 elapsed_seconds=mr.usage.elapsed_seconds,
                 total_tests=mr.usage.total_requests,

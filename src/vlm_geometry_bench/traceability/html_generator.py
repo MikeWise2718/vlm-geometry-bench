@@ -588,6 +588,7 @@ SUMMARY_TEMPLATE = """<!DOCTYPE html>
                     <tr>
                         <th>Model</th>
                         <th>Backend</th>
+                        <th>Host/URL</th>
                         <th>Success Rate</th>
                         {% for task in run.tasks %}
                         <th>{{ task }}</th>
@@ -601,6 +602,7 @@ SUMMARY_TEMPLATE = """<!DOCTYPE html>
                     <tr>
                         <td><strong>{{ model_info.model }}</strong></td>
                         <td>{{ model_info.backend }}</td>
+                        <td style="font-size: 0.8em;">{{ model_info.base_url or '-' }}</td>
                         <td class="{{ 'metric-good' if model_info.success_rate >= 90 else ('metric-warning' if model_info.success_rate >= 70 else 'metric-bad') }}">
                             {{ "%.1f"|format(model_info.success_rate) }}%
                         </td>
