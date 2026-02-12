@@ -517,17 +517,18 @@ INDEX_TEMPLATE = """<!DOCTYPE html>
                             {% endif %}
                         </td>
                         <td class="model-list">{{ run.models|join(', ') }}</td>
-                        <td>{{ run.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
+                        <td>{{ run.timestamp[:16] | replace('T', ' ') if run.timestamp is string else run.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
                         <td>{{ format_duration(run.elapsed_seconds) }}</td>
                         <td>{{ run.tasks|join(', ') }}</td>
                         <td>{{ run.total_tests }}</td>
-                        <td>{% if run.estimated_cost_usd %}${{ "%.2f"|format(run.estimated_cost_usd) }}{% else %}free{% endif %}</td>
+                        <td>{% if run.estimated_cost_usd %}${{ "%.2f"|format(run.estimated_cost_usd) }}{% if 'ollama' in run.backends %}*{% endif %}{% else %}free{% endif %}</td>
                         <td>{% if run.size_mb %}{{ "%.1f"|format(run.size_mb) }} MB{% else %}-{% endif %}</td>
                         <td><a href="{{ run.run_id }}/summary.html" class="btn btn-primary">View</a></td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
+            <p style="color: #8899aa; font-size: 0.85em; margin-top: 0.5em;">* Cost estimated using default token rates (not actual API pricing)</p>
         </div>
     </div>
     <script src="assets/script.js"></script>
@@ -549,7 +550,7 @@ SUMMARY_TEMPLATE = """<!DOCTYPE html>
 
         <header>
             <h1>Test Run: {{ run.run_id }}</h1>
-            <p class="subtitle">{{ run.timestamp_start.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+            <p class="subtitle">{{ run.timestamp_start[:19] | replace('T', ' ') if run.timestamp_start is string else run.timestamp_start.strftime('%Y-%m-%d %H:%M:%S') }}</p>
         </header>
 
         {% if run.comment %}
@@ -576,7 +577,7 @@ SUMMARY_TEMPLATE = """<!DOCTYPE html>
                     <li><span class="label">Elapsed Time</span><span class="value">{{ format_duration(total_elapsed) }}</span></li>
                     <li><span class="label">Total Tests</span><span class="value">{{ total_tests }}</span></li>
                     <li><span class="label">Total Tokens</span><span class="value">{{ "{:,}".format(total_tokens) }}</span></li>
-                    <li><span class="label">Estimated Cost</span><span class="value">{% if total_cost %}${{ "%.2f"|format(total_cost) }}{% else %}free{% endif %}</span></li>
+                    <li><span class="label">Estimated Cost</span><span class="value">{% if total_cost %}${{ "%.2f"|format(total_cost) }}{% if 'ollama' in run.backends %}*{% endif %}{% else %}free{% endif %}</span></li>
                 </ul>
             </div>
         </div>
@@ -624,11 +625,14 @@ SUMMARY_TEMPLATE = """<!DOCTYPE html>
                         </td>
                         {% endfor %}
                         <td>{{ "{:,}".format(model_info.input_tokens + model_info.output_tokens) }}</td>
-                        <td>{% if model_info.estimated_cost_usd %}${{ "%.2f"|format(model_info.estimated_cost_usd) }}{% else %}free{% endif %}</td>
+                        <td>{% if model_info.estimated_cost_usd %}${{ "%.2f"|format(model_info.estimated_cost_usd) }}{% if model_info.backend == 'ollama' %}*{% endif %}{% else %}free{% endif %}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
+            {% if 'ollama' in run.backends %}
+            <p style="color: #8899aa; font-size: 0.85em; margin-top: 0.5em;">* Cost estimated using default token rates (not actual API pricing)</p>
+            {% endif %}
         </div>
 
         <div class="card">
@@ -744,7 +748,7 @@ TEST_TEMPLATE = """<!DOCTYPE html>
                     <li><span class="label">Total Latency</span><span class="value">{{ test.total_latency_ms }}ms</span></li>
                     <li><span class="label">Tokens</span><span class="value">{{ test.total_input_tokens }} in / {{ test.total_output_tokens }} out</span></li>
                     {% if test.estimated_cost_usd %}
-                    <li><span class="label">Cost</span><span class="value">${{ "%.4f"|format(test.estimated_cost_usd) }}</span></li>
+                    <li><span class="label">Cost</span><span class="value">${{ "%.4f"|format(test.estimated_cost_usd) }}{% if test.backend == 'ollama' %}*{% endif %}</span></li>
                     {% endif %}
                 </ul>
             </div>
@@ -816,7 +820,7 @@ TEST_TEMPLATE = """<!DOCTYPE html>
                         <td>{{ other.metrics.get('predicted', '-') }}</td>
                         {% endif %}
                         <td>{{ other.total_latency_ms }}ms</td>
-                        <td>{% if other.estimated_cost_usd %}${{ "%.4f"|format(other.estimated_cost_usd) }}{% else %}free{% endif %}</td>
+                        <td>{% if other.estimated_cost_usd %}${{ "%.4f"|format(other.estimated_cost_usd) }}{% if test.backend == 'ollama' %}*{% endif %}{% else %}free{% endif %}</td>
                     </tr>
                     {% endfor %}
                 </tbody>

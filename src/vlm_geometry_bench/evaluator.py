@@ -54,7 +54,7 @@ MODEL_PRICING = {
     "claude-3-opus": (15.00, 75.00),
     "claude-sonnet-4": (3.00, 15.00),
     "claude-opus-4": (15.00, 75.00),
-    "default": (1.00, 3.00),
+    "default": (1.00, 3.00),  # Fallback for local/self-hosted models (e.g. Ollama)
 }
 
 # Backwards compatibility alias
